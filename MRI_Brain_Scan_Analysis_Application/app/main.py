@@ -1,88 +1,66 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+import logging
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from PIL import Image
-import io
-import numpy as np
-from skimage.filters import sobel
-from skimage.measure import shannon_entropy
-import joblib
-import pandas as pd
+from fastapi.responses import JSONResponse
+from core.config import settings
+from routers import health, predict, evaluation
 
-app = FastAPI()
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
+logger = logging.getLogger("neuroscan")
 
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    description=settings.PROJECT_DESCRIPTION,
+    version=settings.VERSION,
+    docs_url="/docs",
+    redoc_url="/redoc"
+)
+
+# CORS Middleware with configurable origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-try:
-    model = joblib.load('dementia_prediction_model.pkl')
-    label_encoder = joblib.load('label_encoder.pkl')
-    print("Machine learning model and label encoder loaded successfully.")
-except FileNotFoundError:
-    model = None
-    label_encoder = None
-    print("Warning: Machine learning model (dementia_prediction_model.pkl) or label encoder (label_encoder.pkl) not found.")
-    print("Please ensure you have run the model training script to create these files.")
-    print("The application will fallback to a basic rule-based classifier if the model is not loaded.")
+# Global safe exception handler
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled server error on {request.url.path}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "detail": "An internal server error occurred while processing the request.",
+            "type": "InternalServerError"
+        }
+    )
 
+# Include routers under /api and root paths for backward compatibility
+app.include_router(health.router, prefix=settings.API_V1_PREFIX)
+app.include_router(health.router)  # Root /health alias
 
-def extract_features_from_image(file_bytes):
-    img = Image.open(io.BytesIO(file_bytes)).convert('L')
-    img_np = np.array(img)
+app.include_router(predict.router, prefix=settings.API_V1_PREFIX)
+app.include_router(predict.router)  # Root /predict alias
 
-    mean_pixel = np.mean(img_np)
-    std_pixel = np.std(img_np)
-    entropy = shannon_entropy(img_np)
-    edges = sobel(img_np)
-    edge_density = np.mean(edges)
-    h, w = img_np.shape
-    ch, cw = h // 4, w // 4
-    center = img_np[h//2 - ch//2:h//2 + ch//2, w//2 - cw//2:w//2 + cw//2]
-    center_brightness = np.mean(center)
+app.include_router(evaluation.router, prefix=settings.API_V1_PREFIX)
+app.include_router(evaluation.router)  # Root /evaluation alias
 
-    return [mean_pixel, std_pixel, entropy, edge_density, center_brightness]
+@app.get("/")
+def root_index():
+    return {
+        "service": settings.PROJECT_NAME,
+        "version": settings.VERSION,
+        "description": settings.PROJECT_DESCRIPTION,
+        "docs": "/docs",
+        "health": "/api/health"
+    }
 
-
-def simple_rule_based_classifier(features):
-    mean_pixel, std_pixel, entropy, edge_density, center_brightness = features
-
-    if mean_pixel > 70 and center_brightness > 100 and entropy < 5.3:
-        return "Non Demented"
-    elif entropy > 5.3 and edge_density > 0.05:
-        return "Moderate Demented"
-    elif entropy > 4.8 and edge_density > 0.045:
-        return "Mild Demented"
-    elif entropy > 4.0:
-        return "Very Mild Demented"
-    else:
-        return "Non Demented"
-
-
-@app.post("/predict")
-async def predict(file: UploadFile = File(...)):
-    if file.content_type not in ["image/png", "image/jpeg", "image/jpg"]:
-        raise HTTPException(status_code=400, detail="Invalid file type")
-
-    bytes_data = await file.read()
-
-    try:
-        features = extract_features_from_image(bytes_data)
-
-        if model is not None and label_encoder is not None:
-            feature_names = ['mean_pixel_intensity', 'std_pixel_intensity', 'entropy', 'edge_density', 'center_brightness']
-            features_df = pd.DataFrame([features], columns=feature_names)
-
-            predicted_label_encoded = model.predict(features_df)[0]
-            label = label_encoder.inverse_transform([predicted_label_encoded])[0]
-            print(f"Prediction made using ML model: {label}")
-        else:
-            label = simple_rule_based_classifier(features)
-            print(f"Prediction made using rule-based fallback: {label}")
-
-        return {"label": label}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing image: {e}")
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host=settings.HOST, port=settings.PORT, reload=True)

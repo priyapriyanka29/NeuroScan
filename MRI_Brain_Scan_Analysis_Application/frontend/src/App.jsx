@@ -1,114 +1,147 @@
-import { useState, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { Sidebar } from "./components/layout/Sidebar";
+import { Topbar } from "./components/layout/Topbar";
+import { ToastContainer } from "./components/common/Toast";
+import { OverviewPage } from "./pages/OverviewPage";
+import { AnalyzePage } from "./pages/AnalyzePage";
+import { ResultsPage } from "./pages/ResultsPage";
+import { ExplainabilityPage } from "./pages/ExplainabilityPage";
+import { ModelPerformancePage } from "./pages/ModelPerformancePage";
+import { HistoryPage } from "./pages/HistoryPage";
+import { AboutPage } from "./pages/AboutPage";
+import { checkBackendHealth } from "./services/api";
+
+const PAGE_TITLES = {
+  overview: "Clinical Overview & Architecture",
+  analyze: "Analyze Brain MRI Scan",
+  results: "Diagnostic Classification Results",
+  explainability: "Explainability & Grad-CAM Heatmaps",
+  performance: "Model Performance & Evaluation",
+  history: "Session Analysis History",
+  about: "About NeuroScan Research Laboratory",
+};
 
 export default function App() {
-  const [file, setFile] = useState(null);
-  const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [dragging, setDragging] = useState(false);
+  const [currentPage, setCurrentPage] = useState("overview");
+  const [analysisResult, setAnalysisResult] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [health, setHealth] = useState(null);
+  const [toasts, setToasts] = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const fileInputRef = useRef();
+  const addToast = useCallback(({ type = "info", title, message, duration = 5000 }) => {
+    const id = Date.now() + Math.random().toString(36).substring(2, 9);
+    setToasts((prev) => [...prev, { id, type, title, message, duration }]);
+  }, []);
 
-  const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
-    setResult(null);
-  };
+  const dismissToast = useCallback((id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
 
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setDragging(false);
-
-    const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile && droppedFile.type.startsWith("image/")) {
-      setFile(droppedFile);
-      setResult(null);
+  const refreshHealth = useCallback(async () => {
+    const res = await checkBackendHealth();
+    if (res.ok) {
+      setHealth(res.data);
     } else {
-      alert("Please drop a valid image file (PNG or JPG).");
-    }
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    setDragging(true);
-  };
-
-  const handleDragLeave = () => {
-    setDragging(false);
-  };
-
-  const handleClickDropzone = () => {
-    fileInputRef.current.click();
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!file) {
-      alert("Select an image file (PNG/JPG).");
-      return;
-    }
-
-    setLoading(true);
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const response = await fetch("http://localhost:8000/predict", {
-        method: "POST",
-        body: formData,
+      setHealth(null);
+      addToast({
+        type: "error",
+        title: "Backend Unreachable",
+        message: "Cannot establish connection with the NeuroScan API service."
       });
+    }
+  }, [addToast]);
 
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.detail || "Server Error");
-      }
+  useEffect(() => {
+    refreshHealth();
+  }, [refreshHealth]);
 
-      const data = await response.json();
-      setResult(data.label);
-    } catch (error) {
-      alert("Error: " + error.message);
-      setResult(null);
-    } finally {
-      setLoading(false);
+  const handleAnalysisComplete = (result) => {
+    setAnalysisResult(result);
+    setHistory((prev) => [result, ...prev]);
+    setCurrentPage("results");
+  };
+
+  const handleSelectHistoryResult = (item) => {
+    setAnalysisResult(item);
+    setCurrentPage("results");
+  };
+
+  const handleClearHistory = () => {
+    setHistory([]);
+    addToast({
+      type: "info",
+      title: "History Cleared",
+      message: "Session analysis history has been purged."
+    });
+  };
+
+  const renderCurrentPage = () => {
+    switch (currentPage) {
+      case "overview":
+        return <OverviewPage onNavigateToAnalyze={() => setCurrentPage("analyze")} />;
+      case "analyze":
+        return (
+          <AnalyzePage
+            onAnalysisComplete={handleAnalysisComplete}
+            addToast={addToast}
+            health={health}
+          />
+        );
+      case "results":
+        return (
+          <ResultsPage
+            analysisResult={analysisResult}
+            onNavigateToAnalyze={() => setCurrentPage("analyze")}
+          />
+        );
+      case "explainability":
+        return (
+          <ExplainabilityPage
+            analysisResult={analysisResult}
+            onNavigateToAnalyze={() => setCurrentPage("analyze")}
+          />
+        );
+      case "performance":
+        return <ModelPerformancePage />;
+      case "history":
+        return (
+          <HistoryPage
+            history={history}
+            onClearHistory={handleClearHistory}
+            onSelectResult={handleSelectHistoryResult}
+            onNavigateToAnalyze={() => setCurrentPage("analyze")}
+          />
+        );
+      case "about":
+        return <AboutPage />;
+      default:
+        return <OverviewPage onNavigateToAnalyze={() => setCurrentPage("analyze")} />;
     }
   };
 
   return (
-    <div className="container">
-      <h2>MRI Brain Analysis - Alzheimer</h2>
+    <div className="app-shell">
+      <Sidebar
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+        isOpen={sidebarOpen}
+        setIsOpen={setSidebarOpen}
+        modelReady={health?.model?.is_ready || false}
+      />
 
-      <div
-        className={`dropzone ${dragging ? "dragging" : ""}`}
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onClick={handleClickDropzone}
-      >
-        {file ? (
-          <p>{file.name}</p>
-        ) : (
-          <p>Click or drag & drop an image file here</p>
-        )}
-      </div>
-
-      <form onSubmit={handleSubmit} className="form">
-        <input
-          type="file"
-          accept="image/png, image/jpeg"
-          onChange={handleFileChange}
-          ref={fileInputRef}
-          style={{ display: "none" }} // ukrywamy input
+      <main className="app-main">
+        <Topbar
+          currentPageTitle={PAGE_TITLES[currentPage] || "NeuroScan"}
+          health={health}
+          onRefreshHealth={refreshHealth}
+          onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
         />
-        <button type="submit" disabled={loading} className="submit-btn">
-          {loading ? "Analyzing..." : "Classify"}
-        </button>
-      </form>
 
-      {result && (
-        <div className="result">
-          <h2>Classified as:</h2>
-          <p className="label">{result}</p>
-        </div>
-      )}
+        {renderCurrentPage()}
+      </main>
+
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }

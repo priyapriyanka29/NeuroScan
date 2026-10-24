@@ -1,174 +1,135 @@
-# 🧠 MRI Brain Scan Analysis with Python, FastAPI, React & Power BI
+# 🧠 NeuroScan: Alzheimer’s Disease Stage Classification Using MRI & Deep Learning
 
-This full-stack project provides a complete solution for analyzing MRI brain scans related to Alzheimer’s disease. It integrates:
-
-- 🧮 A **Python pipeline** for feature extraction from MRI images
-- 🚀 A **FastAPI backend** for real-time predictions
-- 🌐 A **React frontend** for user interaction
-- 📊 A **Power BI dashboard** for data storytelling and insights
+**NeuroScan** is an advanced healthcare AI research dashboard for multi-class Alzheimer’s Disease stage classification from brain MRI scans with explainability via Gradient-weighted Class Activation Mapping (Grad-CAM).
 
 ---
 
-## 📌 Project Overview
+## 📌 Clinical & Scientific Overview
 
-This solution was built using multiclass MRI datasets labeled as:
-- `NonDemented`
-- `VeryMildDemented`
-- `MildDemented`
-- `ModerateDemented`
+Alzheimer's Disease is a progressive neurodegenerative disorder marked by distinctive structural cerebral alterations, notably medial temporal lobe atrophy, cortical thinning, and lateral ventriculomegaly. NeuroScan classifies T1-weighted brain MRI scans into four standardized clinical stages:
 
-Key components of the project:
-
-- Raw `.zip` image datasets are processed directly in Python
-- Extracted image features include:
-  - Mean pixel intensity
-  - Standard deviation
-  - Shannon entropy
-  - Edge density (Sobel filter)
-  - Center brightness
-- Features are saved into a clean, labeled `.csv` file
-- A **machine learning model** performs diagnostic classification (in case it is not loaded, a simple rule-based classifier simulates diagnostic logic)
-- Power BI dashboard allows for deep visual exploration
-- FastAPI backend processes new scans for classification
-- Frontend enables uploads and live prediction
+1. **NonDemented**: Cognitively unimpaired brain morphology with intact cortical thickness and bilateral hippocampal integrity.
+2. **VeryMildDemented**: Early prodromal stage (frequently corresponding with Mild Cognitive Impairment) characterized by subtle entorhinal cortex thinning.
+3. **MildDemented**: Clinically evident memory decline with pronounced hippocampal volume loss and temporal horn enlargement.
+4. **ModerateDemented**: Advanced neurodegeneration with widespread cortical atrophy and severe ventricular dilation.
 
 ---
 
-## 🎯 Project Goals
+## 🔬 Deep Learning Architecture
 
-This project demonstrates skills in:
+NeuroScan is architected around a multi-stage deep learning pipeline:
 
-- 🧠 Processing medical imaging data at scale
-- 🧬 Extracting structured data from raw `.jpg` inputs
-- 🛠️ Building a clean and maintainable backend in FastAPI
-- 🌍 Integrating a modern React-based frontend
-- 📊 Communicating insights via interactive dashboards in Power BI
-- 🔗 Bridging ML, backend, and BI into one cohesive solution
+$$\text{MRI Tensor } (176 \times 208 \times 1) \longrightarrow \text{Spatial CNN Backbone} \longrightarrow \text{BiLSTM Sequence Layer} \longrightarrow \text{Self-Attention Pooling} \longrightarrow \text{4-Class Softmax}$$
 
----
-
-## 🧪 Technologies Used
-
-### 🌐 Frontend
-- **Vite** – modern web bundler for fast development
-- **React** – interactive user interface
-- **TypeScript** – type-safe frontend logic
-- **Tailwind CSS** – utility-first styling
-- **Axios** – sending image data to backend
-- **CORS** – middleware support for cross-origin requests
-
-### 🧪 Backend
-- **Python 3.8+** – backend language
-- **FastAPI** – fast, modern API framework
-- **Uvicorn** – ASGI web server
-- **Pillow (PIL)** – for image processing
-- **NumPy** – for array-based calculations
-- **scikit-image** – edge detection, entropy, filters
-- **scikit-learn** – for machine learning model development and prediction
-- **joblib** – for saving and loading machine learning models
-- **pandas** – for tabular data handling and feature preparation
-- **python-multipart** – for handling file uploads
-- **CORS Middleware** – to enable frontend-backend communication
-
-### 📊 Dashboard & Data
-- **Power BI** – interactive business intelligence dashboard
-- **Pandas** – for tabular data handling
-- **CSV** – exported image features for BI analysis
-- **Excel** – utilized for initial data inspection and preview of `.csv` files
+1. **Spatial CNN Backbone**: Extracts hierarchical visual representations, localized boundaries, and tissue density transitions from MRI slices.
+2. **Bidirectional LSTM (BiLSTM)**: Models directional spatial and depth dependencies across anatomical coordinates.
+3. **Self-Attention Mechanism**: Computes dynamic spatial weights, amplifying pathologically salient regions (hippocampus, ventricles) while attenuating background artifacts.
+4. **Grad-CAM Explainability**: Traces class score gradients through the final convolutional layer to generate localized thermal heatmaps overlaid onto the original MRI.
 
 ---
 
-## 📁 Datasets
+## 🛠️ Full-Stack Technology Stack
 
-The project uses publicly available MRI datasets:
+### 🌐 Frontend (Healthcare Research Dashboard)
+- **Framework**: React 19 + Vite 7 (SPA architecture)
+- **Design System**: Tailored Navy, White & Teal healthcare palette with accessible contrast
+- **Pages**:
+  - `Overview`: Research objectives, stage biomarkers, and pipeline architecture
+  - `Analyze MRI`: Drag-and-drop ingestion, client-side validation, preview, and preloaded sample tray
+  - `Prediction Results`: Predicted class, 4-class calibrated probabilities, and Grad-CAM viewer
+  - `Explainability / Grad-CAM`: In-depth activation mapping explorer and neurological interpretation
+  - `Model Performance`: Verified test accuracy, precision/recall/F1, and confusion matrix (or explicit 'Not evaluated' state)
+  - `Analysis History`: Session audit log with instant re-inspection and safe local purging
+  - `About NeuroScan`: Scientific methodology, citations, and technology stack
+- **Safety**: Replaced all browser `alert()` popups with auto-dismissing inline notification toasts
 
-- [🧠 Multiclass Alzheimer Dataset (equal & augmented)](https://www.kaggle.com/datasets/aryansinghal10/alzheimers-multiclass-dataset-equal-and-augmented)
-
-These contain thousands of MRI images labeled according to dementia severity.
-
----
-
-## ⚙️ Application Workflow
-
-1.  **Python Pipeline**
-    - Loads and processes `.zip` files of MRI images
-    - Extracts image-based features
-    - Saves results into `.csv`
-
-2.  **FastAPI Server**
-    - Accepts `.jpg`, `.jpeg`, `.png` uploads
-    - Processes and classifies images using a **trained machine learning model**
-    - Returns predicted dementia level
-
-3.  **React Frontend**
-    - Users drag-and-drop brain scan images
-    - Frontend sends file to API
-    - Displays prediction and confidence
-
-4.  **Power BI Dashboard**
-    - Visualizes the distribution of extracted features
-    - Highlights class imbalances, patterns, and augmentation
-    - Interactive filters for deeper analysis
+### ⚙️ Backend (Inference & Safety Engine)
+- **Framework**: FastAPI + Uvicorn ASGI server
+- **Validation**: Magic-byte signature verification (JPEG `\xFF\xD8\xFF`, PNG `\x89PNG`), dimension sanity checks (64px to 4096px), and 10MB size limits
+- **Model Management**: `NeuroScanModelManager` strictly rejects scikit-learn models or heuristic rule-based fallbacks, returning clear readiness diagnostics until trained deep learning weights are supplied
+- **Explainability**: Integrated TensorFlow/Keras Grad-CAM generator producing base64 thermal overlays
 
 ---
 
-## 📈 Dashboard Highlights
+## 🚀 Quick Start (Windows)
 
-The Power BI dashboard includes:
+### 1. One-Click Launch
+Double-click `RunNeuroScan.bat` in the project root. This script will:
+- Validate Python 3.8+ and Node.js
+- Create and activate the Python virtual environment
+- Install backend dependencies from `requirements.txt`
+- Install frontend npm packages
+- Start the FastAPI backend on `http://127.0.0.1:8000`
+- Start the React frontend on `http://127.0.0.1:5173`
 
-- 📊 Dementia class distribution
-- 🧮 Feature comparison across classes
-- 🔍 Augmentation detection
-- 🎛️ Interactive filters for image types and categories
+### 2. Manual Startup
 
-Designed for technical and non-technical audiences in the healthcare field.
-
----
-
-## 📸 Preview
-
-![Preview](images/preview.png)
-
-</br>
-
-## 📽️ Click on the image below and watch how the application works!
-[![Watch the video](https://img.youtube.com/vi/Sny4_Jnsg30/maxresdefault.jpg)](https://youtu.be/Sny4_Jnsg30)
-
-</br>
-
----
-
-## 🚀 Run Locally
-
-### Simplest way to get started:
-
-1.  **Run the `RunAppService.bat` file.**
-2.  Once services are started, open your browser and go to `http://localhost:5173/`.
-
-### Manual Setup & Run (for development or troubleshooting):
-
-**1. Backend (FastAPI)**
-
-```bash
-# Navigate to the backend directory
-cd app
-
-# Create a virtual environment (if not already done)
+**Backend:**
+```powershell
+cd MRI_Brain_Scan_Analysis_Application\app
 python -m venv venv
-
-# Activate the virtual environment
-# On Windows:
 .\venv\Scripts\activate
-# On macOS/Linux:
-source venv/bin/activate
+pip install -r requirements.txt
+python -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload
+```
 
-# Install required Python packages
-# It's highly recommended to create a requirements.txt file:
-# pip freeze > requirements.txt
-# Then install from it:
-# pip install -r requirements.txt
-# Alternatively, install manually:
-pip install fastapi uvicorn pillow numpy scikit-image python-multipart joblib scikit-learn pandas
+**Frontend:**
+```powershell
+cd MRI_Brain_Scan_Analysis_Application\frontend
+npm install
+npm run dev -- --host 127.0.0.1 --port 5173
+```
 
-# Run the FastAPI application
-python -m uvicorn main:app --reload
+Open **[http://127.0.0.1:5173](http://127.0.0.1:5173)** in your browser.
+
+---
+
+## 📡 API Contract
+
+| Endpoint | Method | Description |
+| :--- | :--- | :--- |
+| `GET /api/health` | GET | Reports service health, model readiness, architecture specs, and constraints |
+| `POST /api/predict` | POST | Accepts multipart MRI scan (`file`), performs validation, inference, and Grad-CAM generation |
+| `GET /api/evaluation` | GET | Returns verified test metrics from `evaluation_metrics.json` or explicit 'Not evaluated' status |
+| `GET /docs` | GET | Interactive Swagger UI documentation |
+
+---
+
+## 🧠 Model Integration & Evaluation Guide
+
+### Supplying Trained Model Weights
+Place your trained Keras/TensorFlow model file at:
+```
+MRI_Brain_Scan_Analysis_Application/app/models/neuroscan_cnn_bilstm_attention.keras
+```
+*(Or specify a custom path using the `NEUROSCAN_MODEL_PATH` environment variable).*
+
+Expected input tensor: `(batch_size, 176, 208, 1)` with normalized pixel values in `[0.0, 1.0]`.  
+Expected output: 4-class logits/probabilities mapped to:
+`["NonDemented", "VeryMildDemented", "MildDemented", "ModerateDemented"]`.
+
+### Supplying Evaluation Metrics
+Export your test evaluation results to:
+```
+MRI_Brain_Scan_Analysis_Application/app/models/evaluation_metrics.json
+```
+JSON structure:
+```json
+{
+  "accuracy": 0.962,
+  "macro_f1": 0.958,
+  "total_samples": 1280,
+  "classification_report": {
+    "NonDemented": { "precision": 0.97, "recall": 0.98, "f1_score": 0.97, "support": 320 },
+    "VeryMildDemented": { "precision": 0.95, "recall": 0.94, "f1_score": 0.94, "support": 320 },
+    "MildDemented": { "precision": 0.96, "recall": 0.95, "f1_score": 0.95, "support": 320 },
+    "ModerateDemented": { "precision": 0.98, "recall": 0.97, "f1_score": 0.97, "support": 320 }
+  }
+}
+```
+
+---
+
+## ⚠️ Clinical Research Disclaimer
+
+> **IMPORTANT**: NeuroScan is an investigational deep learning research tool intended solely for academic analysis and methodological exploration. Its predictions, class probabilities, and Grad-CAM activation heatmaps do **not** constitute a clinical diagnosis, medical opinion, or treatment guidance. Grad-CAM visualizes convolutional activations and does not prove pathology. All neuroimaging assessments require evaluation by a board-certified neuroradiologist.
