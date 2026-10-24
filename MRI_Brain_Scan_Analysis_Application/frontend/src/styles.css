@@ -1,0 +1,122 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background: #f0f4f8;
+  color: #333;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.container {
+  background: white;
+  max-width: 420px;
+  width: 100%;
+  padding: 30px 40px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  text-align: center;
+}
+
+h1 {
+  margin-bottom: 24px;
+  font-weight: 600;
+  color: #222;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.file-label {
+  padding: 12px 15px;
+  border: 2px dashed #0077ff;
+  border-radius: 8px;
+  color: #0077ff;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.25s ease;
+}
+
+.file-label:hover {
+  background-color: #e6f0ff;
+}
+
+.file-input {
+  display: none;
+}
+
+.submit-btn {
+  background-color: #0077ff;
+  color: white;
+  font-weight: 600;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.submit-btn:disabled {
+  background-color: #aac9f7;
+  cursor: not-allowed;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background-color: #005fcc;
+}
+
+.result {
+  margin-top: 30px;
+  background-color: #e0f0ff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: inset 0 0 8px #0077ff44;
+}
+
+.result h2 {
+  margin: 0 0 10px 0;
+  font-weight: 600;
+  color: #005fcc;
+}
+
+.label {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #003a75;
+}
+
+.dropzone {
+  border: 2px dashed #ccc;
+  padding: 30px;
+  text-align: center;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  background-color: #f9f9f9;
+}
+
+.dropzone:hover {
+  border-color: #3399ff;
+  background-color: #e6f2ff;
+}
+
+.dropzone.dragging {
+  border-color: #007bff;
+  background-color: #dbeeff;
+}
+
+.file-input {
+  margin-bottom: 10px;
+}

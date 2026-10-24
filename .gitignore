@@ -1,0 +1,67 @@
+# === PYTHON ===
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.manifest
+*.spec
+*.log
+.env
+.env.*
+venv/
+.venv/
+ENV/
+pip-selfcheck.json
+.mypy_cache/
+.dmypy.json
+.pytest_cache/
+
+# === VIRTUAL ENVs ===
+**/venv/
+**/.venv/
+env/
+.venv/
+.venv*/ 
+env*/ 
+pyvenv.cfg
+
+# === TESTS & COVERAGE ===
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# === FASTAPI specific ===
+*.db
+
+# === PILLOW / image caches (just in case) ===
+*.png
+*.jpg
+*.jpeg
+!BrainExampleImgs/**
+!images/**
+
+# === FRONTEND (React / Vite) ===
+**/node_modules/
+**/dist/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.cache/
+frontend/.DS_Store
+
+# === PYCHARM ===
+.idea/
+*.iml
+
+# === OS ===
+.DS_Store
+Thumbs.db
