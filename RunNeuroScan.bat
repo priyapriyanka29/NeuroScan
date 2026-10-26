@@ -25,8 +25,8 @@ if errorlevel 1 (
 )
 
 set ROOT_DIR=%~dp0
-set BACKEND_DIR=%ROOT_DIR%MRI_Brain_Scan_Analysis_Application\app
-set FRONTEND_DIR=%ROOT_DIR%MRI_Brain_Scan_Analysis_Application\frontend
+set BACKEND_DIR=%ROOT_DIR%backend
+set FRONTEND_DIR=%ROOT_DIR%frontend
 
 echo [*] Initializing NeuroScan Backend Environment...
 if not exist "%BACKEND_DIR%\venv" (
